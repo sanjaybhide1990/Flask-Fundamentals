@@ -1,5 +1,5 @@
 import os, uuid
-from flask import Flask, request
+from flask import Flask, request, make_response
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -33,13 +33,37 @@ class Riders(db.Model):
 @app.route('/api/addRider',methods=['POST'])
 def add_rider():
     riderData = request.get_json()
-    checkIfRiderExists = Riders.query.filter_by(name=riderData["number"]).first()
+    checkIfRiderExists = Riders.query.filter_by(number=riderData["number"]).first()
     if not checkIfRiderExists:
         riderToBeAdded = Riders(name=riderData["name"],team=riderData["team"],age=riderData["age"],number=riderData["number"])
         db.session.add(riderToBeAdded)
         db.session.commit()
-        return 'Rider added successfully'
-    return 'Rider already exists'
+        return make_response('Rider added successfully',201)
+    return make_response('Rider already exists',409)
+
+@app.route('/api/getRider/<number_of_rider>')
+def get_rider_info(number_of_rider):
+     checkIfRiderExists = Riders.query.filter_by(number=number_of_rider).first()
+     if checkIfRiderExists:
+        riderObj = {
+             "name": checkIfRiderExists.name,
+             "number": checkIfRiderExists.number,
+             "age": checkIfRiderExists.age,
+             "team": checkIfRiderExists.team
+        }
+        return make_response(riderObj,200)
+     return make_response('Rider not found',404)
+
+@app.route('/api/deleteRider/<number_of_rider>',methods=['DELETE'])
+def delete_rider(number_of_rider):
+     check_if_rider_exists = Riders.query.filter_by(number=number_of_rider).first()
+     if check_if_rider_exists:
+          rider_to_be_deleted = Riders.query.get(check_if_rider_exists.id)
+          db.session.delete(rider_to_be_deleted)
+          db.session.commit()
+          return make_response('Deleted successfully',200)
+     return make_response('Rider not found',404)
+          
 
 if __name__ == '__main__':
     app.run()
