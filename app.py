@@ -41,6 +41,21 @@ def add_rider():
         return make_response('Rider added successfully',201)
     return make_response('Rider already exists',409)
 
+@app.route('/api/updateRider/<number_of_rider>',methods=['PUT'])
+def update_rider(number_of_rider):
+     riderData = request.get_json()
+     check_if_rider_exists = Riders.query.filter_by(number=number_of_rider).first()
+     if check_if_rider_exists:
+        rider_to_be_updated = Riders.query.get(check_if_rider_exists.id)
+        rider_to_be_updated.name = riderData["name"]
+        rider_to_be_updated.age = riderData["age"]
+        rider_to_be_updated.team = riderData["team"]
+        rider_to_be_updated.number = riderData["number"]
+        db.session.add(rider_to_be_updated)
+        db.session.commit()
+        return make_response('Updated successfully',200)
+     return make_response('Rider not found',404)  
+
 @app.route('/api/getRider/<number_of_rider>')
 def get_rider_info(number_of_rider):
      checkIfRiderExists = Riders.query.filter_by(number=number_of_rider).first()
