@@ -14,12 +14,19 @@ app.app_context().push()
 def generate_uuid():
      return str(uuid.uuid4())
 
+class Teams(db.Model):
+     __tablename__ = 'teams'
+
+     id = db.Column(db.String(36),primary_key=True,default=generate_uuid,nullable=False)
+     name = db.Column(db.Text(30),nullable=False)
+     riders = db.relationship('Riders',backref='teams',lazy=True)
+
 class Riders(db.Model):
       __tablename__ = 'riders'
 
       id = db.Column(db.String(36),primary_key=True,default=generate_uuid,nullable=False)
       name = db.Column(db.Text(30),nullable=False)
-      team = db.Column(db.Text(50),nullable=False)
+      team_id = db.Column(db.String(36),db.ForeignKey('teams.id'),nullable=False)
       age = db.Column(db.Integer,nullable=False)
       number = db.Column(db.Integer,nullable=False)
 
