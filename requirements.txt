@@ -55,6 +55,7 @@ pyperclip==1.7.0
 PyRect==0.1.4
 PyScreeze==0.1.26
 python-dateutil==2.8.1
+python-dotenv==1.0.0
 python-editor==1.0.4
 PyTweening==1.0.3
 pytz==2019.3
