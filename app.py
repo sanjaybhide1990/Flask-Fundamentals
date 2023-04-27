@@ -1,4 +1,5 @@
-import os, uuid
+import os, uuid, datetime, pytz
+from datetime import datetime
 from flask import Flask, request, make_response
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
@@ -11,23 +12,44 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 app.app_context().push()
 
+IST = pytz.timezone('Asia/Kolkata')
+
 def generate_uuid():
      return str(uuid.uuid4())
 
+class Teams(db.Model):
+     __tablename__ = 'teams'
+
+     id = db.Column(db.String(36),primary_key=True,default=generate_uuid,nullable=False)
+     name = db.Column(db.Text(30),nullable=False)
+     created_at = db.Column(db.DateTime)
+     updated_at = db.Column(db.DateTime)
+
+     def __init__(self,name,created_at,updated_at):
+          self.name = name
+          self.created_at = created_at
+          self.updated_at = updated_at
+     
+     def __repr__(self):
+          return f'Team created!! Details ->Name:{self.name} '
 class Riders(db.Model):
       __tablename__ = 'riders'
 
       id = db.Column(db.String(36),primary_key=True,default=generate_uuid,nullable=False)
       name = db.Column(db.Text(30),nullable=False)
-      team = db.Column(db.Text(50),nullable=False)
+      created_at = db.Column(db.DateTime)
+      updated_at = db.Column(db.DateTime)
+      team_id = db.Column(db.String(36),db.ForeignKey('teams.id'),nullable=False)
       age = db.Column(db.Integer,nullable=False)
       number = db.Column(db.Integer,nullable=False)
 
-      def __init__(self,name,team,age,number):
+      def __init__(self,name,team_id,age,number,created_at,updated_at):
             self.name = name
-            self.team = team
+            self.team_id = team_id
             self.age = age
             self.number = number
+            self.created_at = created_at
+            self.updated_at = updated_at
       
       def __repr__(self) -> str:
             return f'Rider created!! Details-> Name:{self.name},Team:{self.team},Age:{self.age},Num:{self.number}'
@@ -36,12 +58,29 @@ class Riders(db.Model):
 def add_rider():
     riderData = request.get_json()
     checkIfRiderExists = Riders.query.filter_by(number=riderData["number"]).first()
-    if not checkIfRiderExists:
-        riderToBeAdded = Riders(name=riderData["name"],team=riderData["team"],age=riderData["age"],number=riderData["number"])
+    get_team_id = Teams.query.filter_by(name=riderData["teamName"]).first()
+    if get_team_id and not checkIfRiderExists:
+        riderToBeAdded = Riders(name=riderData["name"],
+                                team_id=get_team_id.id,
+                                age=riderData["age"],
+                                number=riderData["number"],
+                                created_at=datetime.now(IST),
+                                updated_at=datetime.now(IST))
         db.session.add(riderToBeAdded)
         db.session.commit()
         return make_response('Rider added successfully',201)
     return make_response('Rider already exists',409)
+
+@app.route('/api/addTeam',methods=['POST'])
+def add_team():
+     teamData = request.get_json()
+     check_if_team_exists = Teams.query.filter_by(name=teamData["name"]).first()
+     if not check_if_team_exists:
+          team_to_be_added = Teams(name=teamData["name"],created_at=datetime.now(IST),updated_at=datetime.now(IST))
+          db.session.add(team_to_be_added)
+          db.session.commit()
+          return make_response('Team added successfully')
+     return make_response('Team already exists')
 
 @app.route('/api/updateRider/<number_of_rider>',methods=['PUT'])
 def update_rider(number_of_rider):
